@@ -1,0 +1,35 @@
+# Xcode
+#
+# Build artifacts
+build/
+DerivedData/
+
+# Project dependencies
+Packages/
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.swiftpm/xcode/xcshareddata/swiftpm/Package.resolved
+.swiftpm/configuration/
+
+# User-specific files
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# Source Control
+.svn
+.git
+.hg
+.DS_Store
+
+# SwiftData / Core Data stores (if generated during testing)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Project Plan (User requested to ignore)
+plan.md
+
+# AI Tooling
+.gemini/
