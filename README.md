@@ -45,9 +45,9 @@ WorkoutTracker is built with data integrity in mind:
 ## 📝 Roadmap
 
 1. [x] Step 1: SwiftData Schema Setup
-2. [ ] Step 2: Routine Creator View
-3. [ ] Step 3: Main Dashboard
-4. [ ] Step 4: Active Session View (Core Feature)
+2. [x] Step 2: Routine Creator View
+3. [x] Step 3: Main Dashboard
+4. [x] Step 4: Active Session View (Core Feature) - *Implemented immersive single-exercise focus with swipe flow*
 5. [ ] Step 5: Session Persistence & Validation
 
 ---

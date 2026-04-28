@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		999900012F9F52C0000D7B4E /* ActiveSessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999900022F9F52C0000D7B4E /* ActiveSessionViewModel.swift */; };
 		1F1F60F12F9F52C0000D7B4E /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F60E72F9F52C0000D7B4E /* DashboardView.swift */; };
 		1F1F60F22F9F52C0000D7B4E /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F60E52F9F52C0000D7B4E /* SessionViewModel.swift */; };
 		1F1F60F32F9F52C0000D7B4E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1F60DC2F9F52C0000D7B4E /* ContentView.swift */; };
@@ -25,6 +26,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		999900022F9F52C0000D7B4E /* ActiveSessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSessionViewModel.swift; sourceTree = "<group>"; };
 		1F1F60CC2F9F521B000D7B4E /* WorkoutTracker1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F1F60DC2F9F52C0000D7B4E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1F1F60DD2F9F52C0000D7B4E /* LoggedSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSet.swift; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 		1F1F60E62F9F52C0000D7B4E /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				999900022F9F52C0000D7B4E /* ActiveSessionViewModel.swift */,
 				1F1F60E42F9F52C0000D7B4E /* RoutineViewModel.swift */,
 				1F1F60E52F9F52C0000D7B4E /* SessionViewModel.swift */,
 			);
@@ -217,6 +220,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				999900012F9F52C0000D7B4E /* ActiveSessionViewModel.swift in Sources */,
 				1F1F60F12F9F52C0000D7B4E /* DashboardView.swift in Sources */,
 				1F1F60F22F9F52C0000D7B4E /* SessionViewModel.swift in Sources */,
 				1F1F60F32F9F52C0000D7B4E /* ContentView.swift in Sources */,

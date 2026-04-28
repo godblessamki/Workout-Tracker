@@ -2,11 +2,9 @@
 //  ActiveSessionView.swift
 //  WorkoutTracker
 //
-//  ⚠️  PLACEHOLDER — will be fully implemented in Step 4.
-//
-//  This stub exists so DashboardView's .navigationDestination(item:) compiles
-//  without error. It accepts a WorkoutSession and displays the routine name
-//  and start date until the real exercise-logging UI is built.
+//  The core workout logging interface. Displays one exercise at a time
+//  with large typography and inputs, using a PageTabViewStyle for smooth
+//  swiping between exercises.
 //
 
 import SwiftUI
@@ -14,30 +12,204 @@ import SwiftData
 
 struct ActiveSessionView: View {
 
-    // The session that was just created by DashboardView.
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
     let session: WorkoutSession
+    @State private var viewModel = ActiveSessionViewModel()
+
+    // We can assume routine is non-nil for an active session
+    private var exercises: [RoutineExercise] {
+        session.routine?.sortedExercises ?? []
+    }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "figure.strengthtraining.traditional")
-                .font(.system(size: 64))
-                .foregroundStyle(.green)
+        ZStack {
+            // Dark background for a more immersive gym feel
+            Color(UIColor.systemGroupedBackground)
+                .ignoresSafeArea()
 
-            Text(session.routine?.name ?? "Workout")
-                .font(.largeTitle.bold())
-
-            Text(session.formattedDate)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-
-            Text("Exercise logging coming in Step 4! 💪")
-                .font(.body)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+            if exercises.isEmpty {
+                Text("No exercises in this routine.")
+                    .font(.title)
+                    .foregroundStyle(.secondary)
+            } else {
+                TabView(selection: $viewModel.currentIndex) {
+                    ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                        ExercisePage(
+                            exercise: exercise,
+                            session: session,
+                            viewModel: viewModel,
+                            isLast: index == exercises.count - 1,
+                            onNext: {
+                                withAnimation {
+                                    if index < exercises.count - 1 {
+                                        viewModel.currentIndex += 1
+                                    } else {
+                                        finishSession()
+                                    }
+                                }
+                            }
+                        )
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+            }
         }
-        .navigationTitle("Active Session")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack {
+                    Text(session.routine?.name ?? "Workout")
+                        .font(.headline)
+                    Text(session.formattedDate)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Finish") {
+                    finishSession()
+                }
+                .fontWeight(.bold)
+            }
+        }
+        .onAppear {
+            // Initialise inputs dictionary
+            for exercise in exercises {
+                viewModel.prepareInput(for: exercise)
+            }
+        }
+    }
+
+    private func finishSession() {
+        // Step 5 implementation will go here: validation and saving
+        dismiss()
+    }
+}
+
+fileprivate struct ExercisePage: View {
+    let exercise: RoutineExercise
+    let session: WorkoutSession
+    @Bindable var viewModel: ActiveSessionViewModel
+    let isLast: Bool
+    let onNext: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(spacing: 40) {
+            
+            Spacer()
+            
+            // 1. Huge Exercise Name
+            Text(exercise.name)
+                .font(.system(size: 48, weight: .black, design: .rounded))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.5)
+                .padding(.horizontal)
+
+            // 2. Previous Best (if available)
+            if let previous = viewModel.previousBest(for: exercise, currentSession: session) {
+                VStack(spacing: 8) {
+                    Text("PREVIOUS BEST")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .tracking(2)
+                    
+                    Text("\(previous.weightKg, specifier: "%.1f") kg × \(previous.reps)")
+                        .font(.title2.bold())
+                        .foregroundStyle(.blue)
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            } else {
+                VStack(spacing: 8) {
+                    Text("PREVIOUS BEST")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .tracking(2)
+                    Text("First time!")
+                        .font(.title2.bold())
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+            }
+
+            // 3. Huge Inputs for Current Set
+            HStack(spacing: 24) {
+                VStack {
+                    Text("WEIGHT")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .tracking(2)
+                    
+                    TextField("0", text: viewModel.weightBinding(for: exercise))
+                        .keyboardType(.decimalPad)
+                        .font(.system(size: 64, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .focused($isFocused)
+                        .padding()
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                }
+                
+                Text("×")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 24) // Align roughly with text field center
+
+                VStack {
+                    Text("REPS")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .tracking(2)
+                    
+                    TextField("0", text: viewModel.repsBinding(for: exercise))
+                        .keyboardType(.numberPad)
+                        .font(.system(size: 64, weight: .bold, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .focused($isFocused)
+                        .padding()
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                }
+            }
+            .padding(.horizontal, 24)
+
+            Spacer()
+
+            // 4. Big Action Button
+            Button {
+                isFocused = false
+                onNext()
+            } label: {
+                HStack {
+                    Text(isLast ? "Finish Workout" : "Next Exercise")
+                        .font(.title2.bold())
+                    if !isLast {
+                        Image(systemName: "chevron.right")
+                            .font(.title2.bold())
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(isLast ? Color.green : Color.blue)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .shadow(color: (isLast ? Color.green : Color.blue).opacity(0.3), radius: 10, y: 5)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 60) // Extra padding for tab indicator
+        }
+        // Tap outside to dismiss keyboard
+        .onTapGesture {
+            isFocused = false
+        }
     }
 }
 
@@ -47,13 +219,28 @@ struct ActiveSessionView: View {
         for: WorkoutRoutine.self, RoutineExercise.self, WorkoutSession.self, LoggedSet.self,
         configurations: config
     )
+    
     let routine = WorkoutRoutine(name: "Chest + Back")
     container.mainContext.insert(routine)
+    
+    let e1 = RoutineExercise(name: "Bench Press", order: 0, routine: routine)
+    let e2 = RoutineExercise(name: "Pull-ups", order: 1, routine: routine)
+    container.mainContext.insert(e1)
+    container.mainContext.insert(e2)
+    
     let session = WorkoutSession(routine: routine)
     container.mainContext.insert(session)
+    
+    // Add a previous best
+    let oldSession = WorkoutSession(date: Date().addingTimeInterval(-86400 * 2), routine: routine)
+    container.mainContext.insert(oldSession)
+    let bestSet = LoggedSet(reps: 8, weightKg: 100, exercise: e1, session: oldSession)
+    container.mainContext.insert(bestSet)
 
-    return NavigationStack {
+    let view = NavigationStack {
         ActiveSessionView(session: session)
     }
     .modelContainer(container)
+    
+    return view
 }
