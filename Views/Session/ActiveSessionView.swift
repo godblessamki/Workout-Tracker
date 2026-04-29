@@ -14,9 +14,16 @@ struct ActiveSessionView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("weightUnit") private var weightUnit: WeightUnit = .kg
 
     let session: WorkoutSession
     @State private var viewModel = ActiveSessionViewModel()
+
+    // MARK: - Validation State
+    @State private var showingEmptySessionAlert = false
+    @State private var showingPartialEntryAlert = false
+    @State private var showingSaveErrorAlert = false
+    @State private var partialEntryMessage = ""
 
     // We can assume routine is non-nil for an active session
     private var exercises: [RoutineExercise] {
@@ -82,22 +89,54 @@ struct ActiveSessionView: View {
                 viewModel.prepareInput(for: exercise)
             }
         }
+        // MARK: - Validation Alerts
+        .alert("Incomplete Entry", isPresented: $showingPartialEntryAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(partialEntryMessage)
+        }
+        .alert("Empty Workout", isPresented: $showingEmptySessionAlert) {
+            Button("Discard Session", role: .destructive) {
+                viewModel.discardSession(session: session, context: modelContext)
+                dismiss()
+            }
+            Button("Keep Editing", role: .cancel) { }
+        } message: {
+            Text("You haven't logged any sets yet. Do you want to discard this session?")
+        }
+        .alert("Save Failed", isPresented: $showingSaveErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Failed to save your session. Please try again.")
+        }
     }
 
     private func finishSession() {
-        // Step 5 implementation will go here: validation and saving
-        dismiss()
+        let result = viewModel.validateAndSave(session: session, context: modelContext, weightUnit: weightUnit)
+        
+        switch result {
+        case .success:
+            dismiss()
+        case .emptySession:
+            showingEmptySessionAlert = true
+        case .partialEntry(let exerciseName):
+            partialEntryMessage = "You entered partial data for \(exerciseName). Please enter both Weight and Reps, or clear both to skip it."
+            showingPartialEntryAlert = true
+        case .saveFailed:
+            showingSaveErrorAlert = true
+        }
     }
 }
 
 fileprivate struct ExercisePage: View {
     let exercise: RoutineExercise
     let session: WorkoutSession
-    @Bindable var viewModel: ActiveSessionViewModel
+    var viewModel: ActiveSessionViewModel
     let isLast: Bool
     let onNext: () -> Void
 
     @FocusState private var isFocused: Bool
+    @AppStorage("weightUnit") private var weightUnit: WeightUnit = .kg
 
     var body: some View {
         VStack(spacing: 40) {
@@ -120,7 +159,7 @@ fileprivate struct ExercisePage: View {
                         .foregroundStyle(.secondary)
                         .tracking(2)
                     
-                    Text("\(previous.weightKg, specifier: "%.1f") kg × \(previous.reps)")
+                    Text("\(weightUnit.formatted(previous.weightKg)) × \(previous.reps)")
                         .font(.title2.bold())
                         .foregroundStyle(.blue)
                 }
@@ -140,46 +179,83 @@ fileprivate struct ExercisePage: View {
                 .padding()
             }
 
-            // 3. Huge Inputs for Current Set
-            HStack(spacing: 24) {
-                VStack {
-                    Text("WEIGHT")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .tracking(2)
+            // 3. Inputs for Current Sets
+            ScrollView {
+                VStack(spacing: 16) {
+                    let count = viewModel.inputs[exercise.id]?.count ?? 1
+                    ForEach(0..<count, id: \.self) { index in
+                        HStack(spacing: 16) {
+                            VStack {
+                                if index == 0 {
+                                    Text("WEIGHT")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                        .tracking(2)
+                                }
+                                
+                                TextField("0", text: viewModel.weightBinding(for: exercise, index: index))
+                                    .keyboardType(.decimalPad)
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .multilineTextAlignment(.center)
+                                    .focused($isFocused)
+                                    .padding()
+                                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                            
+                            Text("×")
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundStyle(.tertiary)
+                                .padding(.top, index == 0 ? 20 : 0)
+                            
+                            VStack {
+                                if index == 0 {
+                                    Text("REPS")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.secondary)
+                                        .tracking(2)
+                                }
+                                
+                                TextField("0", text: viewModel.repsBinding(for: exercise, index: index))
+                                    .keyboardType(.numberPad)
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .minimumScaleFactor(0.3)
+                                    .lineLimit(1)
+                                    .multilineTextAlignment(.center)
+                                    .focused($isFocused)
+                                    .padding()
+                                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                            
+                            if count > 1 {
+                                Button(action: {
+                                    withAnimation {
+                                        viewModel.removeSet(for: exercise, at: index)
+                                    }
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                        .font(.title2)
+                                }
+                                .padding(.top, index == 0 ? 20 : 0)
+                            }
+                        }
+                    }
                     
-                    TextField("0", text: viewModel.weightBinding(for: exercise))
-                        .keyboardType(.decimalPad)
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .focused($isFocused)
-                        .padding()
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                    Button {
+                        withAnimation {
+                            viewModel.addSet(for: exercise)
+                        }
+                    } label: {
+                        Text("+ Add Set")
+                            .font(.headline)
+                            .foregroundStyle(.blue)
+                            .padding(.top, 8)
+                    }
                 }
-                
-                Text("×")
-                    .font(.system(size: 40, weight: .bold))
-                    .foregroundStyle(.tertiary)
-                    .padding(.top, 24) // Align roughly with text field center
-
-                VStack {
-                    Text("REPS")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .tracking(2)
-                    
-                    TextField("0", text: viewModel.repsBinding(for: exercise))
-                        .keyboardType(.numberPad)
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .multilineTextAlignment(.center)
-                        .focused($isFocused)
-                        .padding()
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 24)
 
             Spacer()
 

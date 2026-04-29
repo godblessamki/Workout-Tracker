@@ -44,14 +44,6 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("Dashboard")
-            .toolbar {
-                // Quick link to manage routines without switching tabs
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: RoutineListView()) {
-                        Label("Routines", systemImage: "list.bullet.clipboard")
-                    }
-                }
-            }
             // Navigates to ActiveSessionView when a session is started.
             // Using item: binds the destination's lifetime to the session object.
             .navigationDestination(item: $activeSession) { session in

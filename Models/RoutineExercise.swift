@@ -63,7 +63,9 @@ final class RoutineExercise {
 
         guard let lastSession = sessions.first else { return nil }
 
-        // Return the single LoggedSet that belongs to the most recent session
-        return loggedSets.first { $0.session?.id == lastSession.id }
+        // Return the best LoggedSet that belongs to the most recent session
+        return loggedSets
+            .filter { $0.session?.id == lastSession.id }
+            .max { $0.weightKg < $1.weightKg }
     }
 }

@@ -50,7 +50,6 @@ final class RoutineViewModel {
         let newOrder = routine.exercises.count
         let exercise = RoutineExercise(name: trimmed, order: newOrder, routine: routine)
         context.insert(exercise)
-        routine.exercises.append(exercise)
     }
 
     /// Removes a RoutineExercise and re-normalises the `order` values of

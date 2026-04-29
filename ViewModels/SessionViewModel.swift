@@ -28,10 +28,6 @@ final class SessionViewModel {
         let session = WorkoutSession(date: .now, routine: routine)
         context.insert(session)
 
-        // Append to the routine's sessions array so the relationship is
-        // immediately visible without waiting for SwiftData to sync.
-        routine.sessions.append(session)
-
         return session
     }
 }
