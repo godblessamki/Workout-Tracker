@@ -88,6 +88,28 @@ struct ActiveSessionView: View {
             for exercise in exercises {
                 viewModel.prepareInput(for: exercise)
             }
+            
+            // Start Live Activity
+            if !exercises.isEmpty, let routineName = session.routine?.name {
+                viewModel.startActivity(
+                    routineName: routineName,
+                    currentExerciseName: exercises[0].name,
+                    currentExerciseIndex: 0,
+                    totalExercises: exercises.count
+                )
+            }
+        }
+        .onChange(of: viewModel.currentIndex) { _, newValue in
+            if newValue < exercises.count {
+                viewModel.updateActivity(
+                    currentExerciseName: exercises[newValue].name,
+                    currentExerciseIndex: newValue,
+                    totalExercises: exercises.count
+                )
+            }
+        }
+        .onDisappear {
+            viewModel.endActivity()
         }
         // MARK: - Validation Alerts
         .alert("Incomplete Entry", isPresented: $showingPartialEntryAlert) {

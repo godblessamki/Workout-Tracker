@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import ActivityKit
 
 @Observable
 final class ActiveSessionViewModel {
@@ -17,6 +18,9 @@ final class ActiveSessionViewModel {
     
     // The currently displayed exercise index.
     var currentIndex: Int = 0
+    
+    // The active Live Activity, if any.
+    var currentActivity: Activity<LiveSessionAttributes>?
     
     init() {}
     
@@ -145,5 +149,44 @@ final class ActiveSessionViewModel {
         session.routine?.sessions.removeAll { $0.id == session.id }
         context.delete(session)
         // SwiftData will automatically save this deletion.
+    }
+    
+    // MARK: - Live Activity
+    
+    func startActivity(routineName: String, currentExerciseName: String, currentExerciseIndex: Int, totalExercises: Int) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        
+        let attributes = LiveSessionAttributes(routineName: routineName)
+        let contentState = LiveSessionAttributes.ContentState(
+            currentExerciseName: currentExerciseName,
+            currentExerciseIndex: currentExerciseIndex,
+            totalExercises: totalExercises
+        )
+        
+        let content = ActivityContent(state: contentState, staleDate: nil)
+        do {
+            currentActivity = try Activity.request(attributes: attributes, content: content, pushType: nil)
+        } catch {
+            print("Failed to start Live Activity: \(error.localizedDescription)")
+        }
+    }
+    
+    func updateActivity(currentExerciseName: String, currentExerciseIndex: Int, totalExercises: Int) {
+        guard let activity = currentActivity else { return }
+        let contentState = LiveSessionAttributes.ContentState(
+            currentExerciseName: currentExerciseName,
+            currentExerciseIndex: currentExerciseIndex,
+            totalExercises: totalExercises
+        )
+        Task {
+            await activity.update(ActivityContent(state: contentState, staleDate: nil))
+        }
+    }
+    
+    func endActivity() {
+        guard let activity = currentActivity else { return }
+        Task {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
     }
 }
